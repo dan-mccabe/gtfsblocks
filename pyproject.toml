@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gtfsblocks"
+version = "0.0.1"
+authors = [
+  { name="Dan McCabe", email="Dan.McCabe@nrel.gov" },
+]
+license = {file = "LICENSE"}
+description = "Python package for processing GTFS feeds to assemble bus blocks and relevant data "
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+]
+dependencies = [
+    "pandas>=2.2,<3.0",
+    "numpy>=1.26,<2.0",
+    "plotly>=5.24"
+]
+
+[project.urls]
+Homepage = "https://github.com/dan-mccabe/gtfsblocks"
+Issues = "https://github.com/dan-mccabe/gtfsblocks/issues"
