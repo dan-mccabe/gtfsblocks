@@ -740,12 +740,12 @@ class Feed:
         trips_out = self.get_trips_from_sids(sids, ref_date=input_date)
         return trips_out
 
-    def get_n_trips_per_day(self) -> pd.Series:
+    def get_daily_summary(self) -> pd.Series:
         """
         Calculate the number of active trips each day
         """
         patterns = self.get_service_patterns()
-        return patterns.groupby('date')['n_trips'].sum()
+        return patterns.groupby('date')[['n_trips', 'n_blocks']].sum()
 
 
     def get_service_patterns(self):
@@ -829,4 +829,57 @@ class Feed:
         patterns = pd.merge(patterns, sid_df, on='service_id')
 
         return patterns
+    
+    def get_service_pattern_summary(self):
+        # Get active service IDs for each day in the feed
+        patterns = self.get_service_patterns()
+        # Compile these into a set
+        dates_to_sids = patterns.groupby('date')['service_id'].apply(frozenset)
+        # Define the distinct service patterns (unique sets of service IDs).
+        # Generally, most of these will be repeated, so we'll group by pattern
+        # rather than every single day in the feed.
+        sid_sets = pd.DataFrame(dates_to_sids.unique(), columns=['service_id'])
+        sid_sets['pattern'] = 'Service Pattern ' + sid_sets.index.astype(str)
+        # Bring the dates back in
+        dates_to_patterns = sid_sets.merge(
+            dates_to_sids.reset_index(), on='service_id'
+        )[['date', 'pattern']].sort_values(by='date')
+
+        # If desired, calculate distance and time of all trips by pulling in
+        # data from other files. Use a dummy reference date because we only
+        # care about the difference between start and end times for now.
+        trips_full = self.add_trip_data(df=self.trips, ref_date='1/1/1970')
+        trips_full['service_hours'] = pd.to_timedelta(
+            trips_full['end_time'] - trips_full['start_time']
+        ).dt.total_seconds() / 3600
+
+        # Compile the number of active trips and blocks per service ID,
+        # as well as the total distance and time in service.
+        service_cts = trips_full.groupby('service_id').agg(
+            {
+                'trip_id': 'nunique',
+                'block_id': 'nunique',
+                'service_dist': 'sum',
+                'service_hours': 'sum'
+            }
+        )
+
+        # Compile the number of trips and blocks per pattern, plus total
+        # distance and time in service
+        pattern_summary = sid_sets.explode('service_id').merge(
+            service_cts,
+            left_on='service_id',
+            right_index=True
+        ).groupby('pattern')[
+            ['trip_id', 'block_id', 'service_dist', 'service_hours']
+        ].sum().rename(
+            columns={'trip_id': 'n_trips', 'block_id': 'n_blocks'}
+        )
+
+        # Merge in number of dates that follow each pattern
+        pattern_summary = pattern_summary.merge(
+            dates_to_patterns.groupby('pattern')['date'].nunique().rename('n_dates'),
+            left_index=True, right_index=True
+        ).sort_values(by='n_dates', ascending=False)
+        return pattern_summary
 
