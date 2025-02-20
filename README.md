@@ -12,6 +12,11 @@ Some core functions include:
  
 See [this gist](https://gist.github.com/dan-mccabe/2c0b0a4d58ab7f3f3068f7102b121672) for an overview of core functionality as well as the example usage below. Documentation is a work in progress.
 
+## Installation
+`gtfsblocks` is installable via `pip`:
+
+`pip install gtfsblocks`
+
 ## Example Usage
 It's easy to read in a GTFS feed with `gtfsblocks`. Just supply the path to the directory where unzipped GTFS files are housed:
 
