@@ -990,3 +990,36 @@ class Feed:
         pattern_summary.index.name = 'service_id'
 
         return pattern_summary
+    
+    def get_service_by_weekday(self) -> pd.DataFrame:
+        """
+        Return a DataFrame that details the diferent service patterns
+        seen for each day of the week and the number of times for which
+        that pattern applies on the corresponding day of the week.
+        """
+        dates_to_sids = self.get_service_ids_all_dates()
+        dates_to_patterns = dates_to_sids.groupby('date')['service_id'].apply(
+            frozenset).reset_index()
+        # Bring back day of week
+        dates_to_patterns = dates_to_patterns.merge(
+            dates_to_sids[['date', 'weekday']].drop_duplicates(),
+            on='date'
+        )
+        # Count up number of times each pattern is seen
+        weekdays_to_patterns = dates_to_patterns.groupby(
+            ['weekday', 'service_id']
+        ).count().rename(columns={'date': 'n_dates'}).reset_index()
+        return weekdays_to_patterns
+    
+    def get_typical_service_by_weekday(self) -> pd.DataFrame:
+        """
+        For each day of the week, identify the most common service
+        pattern (a set of service_id values). Return these as a
+        DataFrame.
+        """
+        # Extract the most common pattern for each day of the week
+        weekdays_to_patterns = self.get_service_by_weekday()
+        top_patterns = weekdays_to_patterns.loc[
+            weekdays_to_patterns.groupby('weekday')['n_dates'].idxmax()
+        ]
+        return top_patterns.set_index('weekday')
