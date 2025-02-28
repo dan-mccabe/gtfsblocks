@@ -928,7 +928,9 @@ class Feed:
 
         return patterns
     
-    def get_service_pattern_summary(self, add_service_details=True):
+    def get_service_pattern_summary(
+            self, add_service_details: bool = True
+        ) -> pd.DataFrame:
         """
         Return a DataFrame that summarizes all service patterns (i.e.,
         unique combinations of service_id values that are active on the
