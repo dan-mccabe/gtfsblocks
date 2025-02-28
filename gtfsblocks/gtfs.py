@@ -335,11 +335,14 @@ class Feed:
     necessary files are stored.
     """
     def __init__(
-            self, calendar_file: str | os.PathLike,
+            self,
+            agency_file: str | os.PathLike,
+            calendar_file: str | os.PathLike,
             calendar_dates_file: str | os.PathLike,
             trips_file: str | os.PathLike,
             shapes_file: str | os.PathLike,
             routes_file: str | os.PathLike,
+            stops_file: str | os.PathLike,
             stop_times_file: str | os.PathLike,
             columns: Optional[Mapping] = None
         ):
@@ -353,9 +356,12 @@ class Feed:
         :param routes_file:
         :param stop_times_file:
         """
-        # TODO: also require agency file and build in filtering by
-        # agency.
+        # TODO: load agency_id in routes (conditionally required),
+        #  build in filtering by agency
         REQUIRED_COLS = {
+            'agency': [
+                'agency_name', 'agency_url', 'agency_timezone'
+            ],
             'trips': [
                 'trip_id', 'route_id', 'service_id', 'block_id', 'shape_id'
             ],
@@ -368,6 +374,9 @@ class Feed:
             'calendar_dates': ['service_id', 'date', 'exception_type'],
             'shapes': [
                 'shape_id', 'shape_pt_lat', 'shape_pt_lon', 'shape_pt_sequence'
+            ],
+            'stops': [
+                'stop_id', 'stop_lat', 'stop_lon'
             ],
             'stop_times': ['trip_id', 'stop_sequence', 'arrival_time']
         }
@@ -392,7 +401,17 @@ class Feed:
                     )
                 )
 
-        # Load each
+        # Load each table
+        self.agency = _load_table(
+            filename=agency_file,
+            required_cols=combined_cols['agency'],
+            optional_cols=['agency_id'],
+            dtype={
+                'agency_id': str,
+                'agency_name': str,
+                'agency_timezone': str
+            }
+        )
         self.trips = _load_table(
             filename=trips_file,
             required_cols=combined_cols['trips'],
@@ -407,11 +426,12 @@ class Feed:
         self.routes = _load_table(
             filename=routes_file,
             required_cols=combined_cols['routes'],
-            optional_cols=['route_desc'],
+            optional_cols=['route_desc', 'agency_id'],
             dtype={
                 'route_id': str,
                 'route_short_name': str,
-                'route_type': int
+                'route_type': int,
+                'agency_id': str
             }
         )
         self.routes.set_index('route_id', inplace=True)
@@ -461,12 +481,26 @@ class Feed:
                 'shape_id': str
             }
         )
+
+        self.stops = _load_table(
+            stops_file,
+            required_cols=combined_cols['stops'],
+            dtype={
+                'stop_id': str,
+                'stop_lat': float,
+                'stop_lon': float
+            }
+        )
+
         self.stop_times = _load_table(
             stop_times_file,
             required_cols=combined_cols['stop_times'],
             dtype={'trip_id': str}
         )
+        # DF with details for each unique shape, e.g. distance
         self.shapes_summary = None
+        # DF mapping dates to active service IDs
+        self._dates_to_service_ids = None
 
     @classmethod
     def from_dir(
@@ -478,19 +512,23 @@ class Feed:
         Construct a Feed object from the path to a directory where
         static GTFS files are stored.
         """
+        agency_file = '{}/agency.txt'.format(dir_name)
         trips_file = '{}/trips.txt'.format(dir_name)
         calendar_file = '{}/calendar.txt'.format(dir_name)
         calendar_dates_file = '{}/calendar_dates.txt'.format(dir_name)
         shapes_file = '{}/shapes.txt'.format(dir_name)
         routes_file = '{}/routes.txt'.format(dir_name)
+        stops_file = '{}/stops.txt'.format(dir_name)
         stop_times_file = '{}/stop_times.txt'.format(dir_name)
 
         return cls(
+            agency_file=agency_file,
             calendar_file=calendar_file,
             calendar_dates_file=calendar_dates_file,
             trips_file=trips_file,
             shapes_file=shapes_file,
             routes_file=routes_file,
+            stops_file=stops_file,
             stop_times_file=stop_times_file,
             columns=columns
         )
@@ -505,6 +543,50 @@ class Feed:
         # Exclude any trips on those routes.
         self.trips = self.trips[
             ~self.trips['route_id'].isin(bad_rts)]
+        
+    def restrict_to_agency(self, agency_name: str):
+        """
+        Filter Feed down to only features relevant to the agency or
+        agencies specified. Note that this modifies the data stored in
+        Feed without retaining information about other agencies'
+        service, so it should not be called more than once on the same
+        Feed instance.
+
+        This method first filters down routes to only include those with
+        the matching agency_id, then also excludes all trips and shapes
+        that aren't are not connected to those routes.
+
+        :param agency_name: string corresponding to agency_name field
+            in agency.txt
+        """
+        if agency_name not in self.agency['agency_name'].tolist():
+            raise ValueError(
+                'input agency_name is not present in agency.txt. Agencies '
+                'included are: {}'.format(self.agency['agency_name'].tolist())
+            )
+        agency_match = self.agency[
+            self.agency['agency_name'] == agency_name
+        ]
+        agency_id = agency_match.iloc[0]['agency_id']
+
+        # Filter routes
+        self.routes = self.routes[self.routes['agency_id'] == agency_id]
+
+        # Filter trips
+        self.trips = self.trips[self.trips['route_id'].isin(self.routes.index)]
+
+        if len(self.trips) == 0:
+            warnings.warn(
+                'Feed does not contain any bus trips on routes served by the '
+                'provided agency_name. This could happen if, for example, the '
+                'agency only operates non-bus routes.'
+            )
+
+        # Filter shapes
+        self.shapes = self.shapes[
+            self.shapes['shape_id'].isin(self.trips['shape_id'])
+        ]
+
 
     def summarize_shapes(self, shape_ids: list):
         """
@@ -740,15 +822,19 @@ class Feed:
         trips_out = self.get_trips_from_sids(sids, ref_date=input_date)
         return trips_out
 
-    def get_daily_summary(self) -> pd.Series:
-        """
-        Calculate the number of active trips each day
-        """
-        patterns = self.get_service_patterns()
-        return patterns.groupby('date')[['n_trips', 'n_blocks']].sum()
+    # def get_daily_summary(self) -> pd.Series:
+    #     """
+    #     Calculate the number of active trips each day
+    #     """
+    #     patterns = self.get_service_ids_all_dates()
+    #     # TODO: need to add columns
+    #     patterns = patterns.merge(
+    #         self._
+    #     )
+    #     return patterns.groupby('date')[['n_trips', 'n_blocks']].sum()
 
 
-    def get_service_patterns(self):
+    def get_service_ids_all_dates(self):
         dow_dict = {
             0: 'monday',
             1: 'tuesday',
@@ -759,10 +845,9 @@ class Feed:
             6: 'sunday'
         }
 
-        sid_df = pd.DataFrame(
-            self.trips.groupby('service_id')['trip_id'].nunique().rename('n_trips')
-        )
-        sid_df['n_blocks'] = self.trips.groupby('service_id')['block_id'].nunique()
+        # Don't re-run the analysis if we've already done it
+        if self._dates_to_service_ids is not None:
+            return self._dates_to_service_ids
 
         if self.calendar is not None:
             cal_df = self.calendar.copy()
@@ -825,61 +910,58 @@ class Feed:
                         patterns['date'] == row['date'])
                 patterns = patterns[~match]
 
-        # Bring in number of trips and blocks based on service IDs
-        patterns = pd.merge(patterns, sid_df, on='service_id')
+        self._dates_to_service_ids = patterns
 
         return patterns
     
-    def get_service_pattern_summary(self):
-        # Get active service IDs for each day in the feed
-        patterns = self.get_service_patterns()
+    def get_service_pattern_summary(self, add_service_details=True):
+        # Get mapping from dates to service IDs
+        patterns = self.get_service_ids_all_dates()
         # Compile these into a set
         dates_to_sids = patterns.groupby('date')['service_id'].apply(frozenset)
-        # Define the distinct service patterns (unique sets of service IDs).
-        # Generally, most of these will be repeated, so we'll group by pattern
-        # rather than every single day in the feed.
+        # Define the distinct service patterns (unique sets of service IDs)
         sid_sets = pd.DataFrame(dates_to_sids.unique(), columns=['service_id'])
-        sid_sets['pattern'] = 'Service Pattern ' + sid_sets.index.astype(str)
-        # Bring the dates back in
-        dates_to_patterns = sid_sets.merge(
-            dates_to_sids.reset_index(), on='service_id'
-        )[['date', 'pattern']].sort_values(by='date')
+        sid_sets['pattern'] = sid_sets['service_id'].copy()
 
-        # If desired, calculate distance and time of all trips by pulling in
-        # data from other files. Use a dummy reference date because we only
-        # care about the difference between start and end times for now.
-        trips_full = self.add_trip_data(df=self.trips, ref_date='1/1/1970')
-        trips_full['service_hours'] = pd.to_timedelta(
-            trips_full['end_time'] - trips_full['start_time']
-        ).dt.total_seconds() / 3600
-
-        # Compile the number of active trips and blocks per service ID,
-        # as well as the total distance and time in service.
-        service_cts = trips_full.groupby('service_id').agg(
-            {
+        # Define how columns should be aggregated for our summary
+        if add_service_details:
+            agg_dict = {
                 'trip_id': 'nunique',
                 'block_id': 'nunique',
-                'service_dist': 'sum',
-                'service_hours': 'sum'
+                'service_hours': 'sum',
+                'service_dist': 'sum'
             }
-        )
+            # Make sure all trip data is available
+            trips_df = self.add_trip_data(df=self.trips, ref_date='1/1/1970')
+            trips_df['service_hours'] = pd.to_timedelta(
+                trips_df['end_time'] - trips_df['start_time']
+            ).dt.total_seconds() / 3600
 
-        # Compile the number of trips and blocks per pattern, plus total
-        # distance and time in service
+        else:
+            agg_dict = {
+                'trip_id': 'nunique',
+                'block_id': 'nunique'
+            }
+            trips_df = self.trips
+        trip_cols = list(agg_dict.keys())
+        service_cts = trips_df.groupby('service_id').agg(agg_dict)
+        # Bring in service details from service_counts, then aggregate by pattern
         pattern_summary = sid_sets.explode('service_id').merge(
             service_cts,
             left_on='service_id',
             right_index=True
-        ).groupby('pattern')[
-            ['trip_id', 'block_id', 'service_dist', 'service_hours']
-        ].sum().rename(
+        )
+        pattern_summary = pattern_summary.groupby('pattern')[trip_cols].sum().rename(
             columns={'trip_id': 'n_trips', 'block_id': 'n_blocks'}
         )
-
-        # Merge in number of dates that follow each pattern
+        # Count number of dates each service pattern applies
+        date_counts_by_sid = dates_to_sids.reset_index().groupby(
+            'service_id')['date'].nunique().rename('n_dates')
+        # Add this date count to the summary DF
         pattern_summary = pattern_summary.merge(
-            dates_to_patterns.groupby('pattern')['date'].nunique().rename('n_dates'),
+            date_counts_by_sid,
             left_index=True, right_index=True
         ).sort_values(by='n_dates', ascending=False)
-        return pattern_summary
+        pattern_summary.index.name = 'service_id'
 
+        return pattern_summary
