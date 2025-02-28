@@ -822,19 +822,33 @@ class Feed:
         trips_out = self.get_trips_from_sids(sids, ref_date=input_date)
         return trips_out
 
-    # def get_daily_summary(self) -> pd.Series:
-    #     """
-    #     Calculate the number of active trips each day
-    #     """
-    #     patterns = self.get_service_ids_all_dates()
-    #     # TODO: need to add columns
-    #     patterns = patterns.merge(
-    #         self._
-    #     )
-    #     return patterns.groupby('date')[['n_trips', 'n_blocks']].sum()
+    def get_daily_summary(self) -> pd.Series:
+        """
+        Calculate the number of active trips each day
+        """
+        patterns = self.get_service_ids_all_dates()
+        sid_summary = self.trips.groupby('service_id')[
+            ['trip_id', 'block_id']
+        ].nunique().rename(
+            columns={
+                'trip_id': 'n_trips',
+                'block_id': 'n_blocks'
+            }
+        ).reset_index()
+        patterns = patterns.merge(
+            sid_summary, on='service_id'
+        )
+        # Calculate and merge in number of trips
+        return patterns.groupby('date')[['n_trips', 'n_blocks']].sum()
 
 
-    def get_service_ids_all_dates(self):
+    def get_service_ids_all_dates(self) -> pd.DataFrame:
+        """
+        Process calendar information to identify the service_id values
+        that are active on each day of service in the scope of the feed.
+        The returned DataFrame includes three columns: date, service_id,
+        and weekday.
+        """
         dow_dict = {
             0: 'monday',
             1: 'tuesday',
@@ -915,6 +929,17 @@ class Feed:
         return patterns
     
     def get_service_pattern_summary(self, add_service_details=True):
+        """
+        Return a DataFrame that summarizes all service patterns (i.e.,
+        unique combinations of service_id values that are active on the
+        same day). This DF maps service patterns (as a frozenset of
+        service_id values) to the corresponding number of active trips
+        and blocks and, if add_service_details=True (default), will
+        also calculate the total distance traveled in service and total
+        time in service. This could take a few seconds for larger feeds
+        because the shapes.txt file needs to be analyzed in detail to
+        estimate all shape distances.
+        """
         # Get mapping from dates to service IDs
         patterns = self.get_service_ids_all_dates()
         # Compile these into a set
