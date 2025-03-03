@@ -356,8 +356,6 @@ class Feed:
         :param routes_file:
         :param stop_times_file:
         """
-        # TODO: load agency_id in routes (conditionally required),
-        #  build in filtering by agency
         REQUIRED_COLS = {
             'agency': [
                 'agency_name', 'agency_url', 'agency_timezone'
@@ -378,7 +376,9 @@ class Feed:
             'stops': [
                 'stop_id', 'stop_lat', 'stop_lon'
             ],
-            'stop_times': ['trip_id', 'stop_sequence', 'arrival_time']
+            'stop_times': [
+                'trip_id', 'stop_sequence', 'arrival_time', 'stop_id'
+            ]
         }
 
         # Add user-supplied columns as desired. Treat them as required
