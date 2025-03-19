@@ -369,6 +369,9 @@ class Feed:
         :param routes_file:
         :param stop_times_file:
         """
+        # TODO: columns is not being accounted for. Needs to be reworked to establish
+        #   whether all present columns are retained and ensure that the columns
+        #   input is accounted for if they are not.
         REQUIRED_COLS = {
             "agency": ["agency_name", "agency_url", "agency_timezone"],
             "trips": ["trip_id", "route_id", "service_id", "block_id", "shape_id"],
@@ -389,6 +392,52 @@ class Feed:
             "shapes": ["shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence"],
             "stops": ["stop_id", "stop_lat", "stop_lon"],
             "stop_times": ["trip_id", "stop_sequence", "arrival_time", "stop_id"],
+        }
+
+        COL_DTYPES = {
+            "agency": {
+                "agency_id": str,
+                "agency_name": str,
+                "agency_url": str,
+                "agency_timezone": str,
+            },
+            "trips": {
+                "trip_id": str,
+                "route_id": str,
+                "service_id": str,
+                "block_id": str,
+                "shape_id": str,
+            },
+            "routes": {
+                "route_id": str,
+                "route_short_name": str,
+                "route_long_name": str,
+                "route_type": int,
+                "route_desc": str,
+                "agency_id": str,
+            },
+            "calendar": {
+                "service_id": str,
+                "monday": int,
+                "tuesday": int,
+                "wednesday": int,
+                "thursday": int,
+                "friday": int,
+                "saturday": int,
+                "sunday": int,
+                "start_date": str,
+                "end_date": str,
+            },
+            "calendar_dates": {"service_id": str, "date": str, "exception_type": int},
+            "shapes": {"shape_id": str, "shape_pt_lat": float, "shape_pt_lon": float},
+            "stops": {"stop_id": str, "stop_lat": float, "stop_lon": float},
+            "stop_times": {
+                "trip_id": str,
+                "stop_sequence": int,
+                "arrival_time": str,
+                "departure_time": str,
+                "stop_id": str,
+            },
         }
 
         # Add user-supplied columns as desired. Treat them as required
@@ -414,29 +463,18 @@ class Feed:
             filename=agency_file,
             required_cols=combined_cols["agency"],
             optional_cols=["agency_id"],
-            dtype={"agency_id": str, "agency_name": str, "agency_timezone": str},
+            dtype=COL_DTYPES['agency'],
         )
         self.trips = _load_table(
             filename=trips_file,
             required_cols=combined_cols["trips"],
-            dtype={
-                "trip_id": str,
-                "route_id": str,
-                "service_id": str,
-                "block_id": str,
-                "shape_id": str,
-            },
+            dtype=COL_DTYPES['trips'],
         )
         self.routes = _load_table(
             filename=routes_file,
             required_cols=combined_cols["routes"],
             optional_cols=["route_desc", "agency_id"],
-            dtype={
-                "route_id": str,
-                "route_short_name": str,
-                "route_type": int,
-                "agency_id": str,
-            },
+            dtype=COL_DTYPES['routes'],
         )
         self.routes.set_index("route_id", inplace=True)
         # Only retain bus routes
@@ -448,7 +486,7 @@ class Feed:
             self.calendar = _load_table(
                 filename=calendar_file,
                 required_cols=combined_cols["calendar"],
-                dtype={"service_id": str},
+                dtype=COL_DTYPES['calendar'],
             )
             self.calendar["start_date"] = pd.to_datetime(
                 self.calendar["start_date"].astype(str)
@@ -463,7 +501,7 @@ class Feed:
             self.calendar_dates = _load_table(
                 filename=calendar_dates_file,
                 required_cols=combined_cols["calendar_dates"],
-                dtype={"service_id": str},
+                dtype=COL_DTYPES['calendar_dates'],
             )
             self.calendar_dates["date"] = pd.to_datetime(
                 self.calendar_dates["date"].astype(str)
@@ -477,19 +515,19 @@ class Feed:
             )
 
         self.shapes = _load_table(
-            shapes_file, required_cols=combined_cols["shapes"], dtype={"shape_id": str}
+            shapes_file, required_cols=combined_cols["shapes"], dtype=COL_DTYPES['shapes']
         )
 
         self.stops = _load_table(
             stops_file,
             required_cols=combined_cols["stops"],
-            dtype={"stop_id": str, "stop_lat": float, "stop_lon": float},
+            dtype=COL_DTYPES['stops'],
         )
 
         self.stop_times = _load_table(
             stop_times_file,
             required_cols=combined_cols["stop_times"],
-            dtype={"trip_id": str},
+            dtype=COL_DTYPES['stop_times'],
         )
         # DF with details for each unique shape, e.g. distance
         self.shapes_summary = None

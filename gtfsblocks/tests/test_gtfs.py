@@ -195,6 +195,58 @@ def test_feed_from_dir_optional_cols():
     assert set(feed.stop_times.columns.tolist()) == set(expect_cols["stop_times"])
 
 
+def test_feed_dtypes():
+    # Load test feed
+    feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
+
+    # Check that the correct dtypes are loaded by default
+    assert feed.agency.dtypes["agency_id"] == "object"
+    assert feed.agency.dtypes["agency_name"] == "object"
+    assert feed.agency.dtypes["agency_url"] == "object"
+    assert feed.agency.dtypes["agency_timezone"] == "object"
+
+    assert feed.trips.dtypes["trip_id"] == "object"
+    assert feed.trips.dtypes["route_id"] == "object"
+    assert feed.trips.dtypes["service_id"] == "object"
+    assert feed.trips.dtypes["block_id"] == "object"
+    assert feed.trips.dtypes["shape_id"] == "object"
+
+    assert feed.routes.dtypes["route_short_name"] == "object"
+    assert feed.routes.dtypes["route_type"] == "int64"
+    assert feed.routes.dtypes["agency_id"] == "object"
+    assert feed.routes.dtypes["route_desc"] == "object"
+
+    assert feed.calendar.dtypes["service_id"] == "object"
+    assert feed.calendar.dtypes["monday"] == "int64"
+    assert feed.calendar.dtypes["tuesday"] == "int64"
+    assert feed.calendar.dtypes["wednesday"] == "int64"
+    assert feed.calendar.dtypes["thursday"] == "int64"
+    assert feed.calendar.dtypes["friday"] == "int64"
+    assert feed.calendar.dtypes["saturday"] == "int64"
+    assert feed.calendar.dtypes["sunday"] == "int64"
+    assert str(feed.calendar.dtypes["start_date"]) == "datetime64[ns]"
+    assert str(feed.calendar.dtypes["end_date"]) == "datetime64[ns]"
+
+    assert feed.calendar_dates.dtypes["service_id"] == "object"
+    assert str(feed.calendar_dates.dtypes["date"]) == "datetime64[ns]"
+    assert feed.calendar_dates.dtypes["exception_type"] == "int64"
+
+    assert feed.shapes.dtypes["shape_id"] == "object"
+    assert feed.shapes.dtypes["shape_pt_lat"] == "float64"
+    assert feed.shapes.dtypes["shape_pt_lon"] == "float64"
+    assert feed.shapes.dtypes["shape_pt_sequence"] == "int64"
+
+    assert feed.stops.dtypes["stop_id"] == "object"
+    assert feed.stops.dtypes["stop_lat"] == "float64"
+    assert feed.stops.dtypes["stop_lon"] == "float64"
+
+    assert feed.stop_times.dtypes["trip_id"] == "object"
+    assert feed.stop_times.dtypes["stop_id"] == "object"
+    assert feed.stop_times.dtypes["stop_sequence"] == "int64"
+    assert feed.stop_times.dtypes["arrival_time"] == "object"
+
+
+
 # # Test for Feed.get_service_ids_from_date
 # def test_get_service_ids_from_date(tmp_path):
 #     # Create temporary GTFS files
