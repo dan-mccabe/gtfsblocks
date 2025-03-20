@@ -1,0 +1,5 @@
+service_id,date,holiday_name,exception_type
+c_24057_b_83873_d_127,20241225,Christmas Day,2
+c_24057_b_83873_d_127,20241128,Thanksgiving Day,2
+c_24057_b_82116_d_127,20241225,Christmas Day,2
+c_24057_b_82116_d_127,20241128,Thanksgiving Day,2

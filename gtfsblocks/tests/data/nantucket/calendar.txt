@@ -1,0 +1,4 @@
+service_id,service_name,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date
+c_70889_b_83872_d_127,Airport Year round (All days of week),1,1,1,1,1,1,1,20241122,20250515
+c_24057_b_83873_d_127,Jan 1st - May 15th & Oct 10 - Dec 31 2023 (All days of week),1,1,1,1,1,1,1,20250101,20250515
+c_24057_b_82116_d_127,Jan 1st - May 15th & Oct 10 - Dec 31 2023 (All days of week),1,1,1,1,1,1,1,20241010,20241231

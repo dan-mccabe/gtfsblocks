@@ -1,0 +1,10 @@
+agency_id,route_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,min_headway_minutes,eligibility_restricted,continuous_pickup,continuous_drop_off,tts_route_short_name,tts_route_long_name
+442,2885,,Miacomet Loop,,3,https://nrtawave.com/miacomet-loop/,a14b23,ffffff,1,20,0,1,1,,
+442,2886,,Mid Island Loop,,3,https://nrtawave.com/mid-island-loop/,ee407d,ffffff,11,30,0,1,1,,
+442,2888,,Sconset via Old South Road Route,,3,https://nrtawave.com/sconset-via-old-south-road-route/,e34b32,ffffff,2,60,0,1,1,,
+442,2884,,Madaket Route,,3,https://nrtawave.com/madaket-route/,007141,ffffff,3,30,0,1,1,,
+442,6277,,Airport,,3,https://nrtawave.com/airport-route/,369cd7,ffffff,4,30,0,1,1,,
+442,2890,,Surfside Beach Route,,3,https://nrtawave.com/surfside-beach-route/,f48d24,ffffff,5,40,0,1,1,,
+442,2883,,Jetties Beach Route,,3,https://nrtawave.com/jetties-beach-route/,d62d2c,ffffff,6,30,0,1,1,,
+442,2887,,Sconset via Milestone Road Route,,3,https://nrtawave.com/sconset-via-milestone-road-route/,78c145,ffffff,7,60,0,1,1,,
+442,2889,,Sconset via Polpis Road Route,,3,https://nrtawave.com/sconset-via-polpis-road-route/,9f0090,ffffff,8,80,0,1,1,,
