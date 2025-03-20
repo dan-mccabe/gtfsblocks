@@ -369,9 +369,6 @@ class Feed:
         :param routes_file:
         :param stop_times_file:
         """
-        # TODO: columns is not being accounted for. Needs to be reworked to establish
-        #   whether all present columns are retained and ensure that the columns
-        #   input is accounted for if they are not.
         REQUIRED_COLS = {
             "agency": ["agency_name", "agency_url", "agency_timezone"],
             "trips": ["trip_id", "route_id", "service_id", "block_id", "shape_id"],
@@ -463,18 +460,18 @@ class Feed:
             filename=agency_file,
             required_cols=combined_cols["agency"],
             optional_cols=["agency_id"],
-            dtype=COL_DTYPES['agency'],
+            dtype=COL_DTYPES["agency"],
         )
         self.trips = _load_table(
             filename=trips_file,
             required_cols=combined_cols["trips"],
-            dtype=COL_DTYPES['trips'],
+            dtype=COL_DTYPES["trips"],
         )
         self.routes = _load_table(
             filename=routes_file,
             required_cols=combined_cols["routes"],
             optional_cols=["route_desc", "agency_id"],
-            dtype=COL_DTYPES['routes'],
+            dtype=COL_DTYPES["routes"],
         )
         self.routes.set_index("route_id", inplace=True)
         # Only retain bus routes
@@ -486,7 +483,7 @@ class Feed:
             self.calendar = _load_table(
                 filename=calendar_file,
                 required_cols=combined_cols["calendar"],
-                dtype=COL_DTYPES['calendar'],
+                dtype=COL_DTYPES["calendar"],
             )
             self.calendar["start_date"] = pd.to_datetime(
                 self.calendar["start_date"].astype(str)
@@ -501,7 +498,7 @@ class Feed:
             self.calendar_dates = _load_table(
                 filename=calendar_dates_file,
                 required_cols=combined_cols["calendar_dates"],
-                dtype=COL_DTYPES['calendar_dates'],
+                dtype=COL_DTYPES["calendar_dates"],
             )
             self.calendar_dates["date"] = pd.to_datetime(
                 self.calendar_dates["date"].astype(str)
@@ -515,20 +512,31 @@ class Feed:
             )
 
         self.shapes = _load_table(
-            shapes_file, required_cols=combined_cols["shapes"], dtype=COL_DTYPES['shapes']
+            shapes_file,
+            required_cols=combined_cols["shapes"],
+            dtype=COL_DTYPES["shapes"],
         )
 
         self.stops = _load_table(
             stops_file,
             required_cols=combined_cols["stops"],
-            dtype=COL_DTYPES['stops'],
+            dtype=COL_DTYPES["stops"],
         )
 
         self.stop_times = _load_table(
             stop_times_file,
             required_cols=combined_cols["stop_times"],
-            dtype=COL_DTYPES['stop_times'],
+            dtype=COL_DTYPES["stop_times"],
         )
+        # Update arrival and departure time dtypes
+        self.stop_times["arrival_time"] = pd.to_timedelta(
+            self.stop_times["arrival_time"]
+        )
+        if "departure_time" in self.stop_times.columns:
+            self.stop_times["departure_time"] = pd.to_timedelta(
+                self.stop_times["departure_time"]
+            )
+
         # DF with details for each unique shape, e.g. distance
         self.shapes_summary = None
         # DF mapping dates to active service IDs
@@ -751,9 +759,7 @@ class Feed:
         st_filt = self.stop_times.loc[
             self.stop_times["trip_id"].isin(df["trip_id"].tolist()), :
         ]
-        st_filt.loc[:, "arrival_time"] = ref_date + pd.to_timedelta(
-            st_filt["arrival_time"]
-        )
+        st_filt.loc[:, "arrival_time"] = ref_date + st_filt["arrival_time"]
 
         # Get start time of every trip
         start_times = (

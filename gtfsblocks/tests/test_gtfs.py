@@ -106,7 +106,7 @@ def test_get_shape():
 def test_feed_from_dir_default():
     # Load test feed
     # feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
-    feed = Feed.from_dir('../../data/nantucket')
+    feed = Feed.from_dir("../../data/nantucket")
 
     # Check that the correct columns are loaded by default
     default_cols = {
@@ -131,13 +131,15 @@ def test_feed_from_dir_default():
         "stop_times": ["trip_id", "stop_sequence", "arrival_time", "stop_id"],
     }
     print(feed.stop_times.columns.tolist())
-    print(default_cols['stop_times'])
+    print(default_cols["stop_times"])
 
     assert set(feed.agency.columns.tolist()) == set(default_cols["agency"])
     assert set(feed.trips.columns.tolist()) == set(default_cols["trips"])
     assert set(feed.routes.columns.tolist()) == set(default_cols["routes"])
     assert set(feed.calendar.columns.tolist()) == set(default_cols["calendar"])
-    assert set(feed.calendar_dates.columns.tolist()) == set(default_cols["calendar_dates"])
+    assert set(feed.calendar_dates.columns.tolist()) == set(
+        default_cols["calendar_dates"]
+    )
     assert set(feed.shapes.columns.tolist()) == set(default_cols["shapes"])
     assert set(feed.stops.columns.tolist()) == set(default_cols["stops"])
     assert set(feed.stop_times.columns.tolist()) == set(default_cols["stop_times"])
@@ -160,7 +162,13 @@ def test_feed_from_dir_optional_cols():
     expect_cols = {
         "agency": ["agency_id", "agency_name", "agency_url", "agency_timezone"],
         "trips": ["trip_id", "route_id", "service_id", "block_id", "shape_id"],
-        "routes": ["route_short_name", "route_long_name", "route_type", "agency_id", "route_desc"],
+        "routes": [
+            "route_short_name",
+            "route_long_name",
+            "route_type",
+            "agency_id",
+            "route_desc",
+        ],
         "calendar": [
             "service_id",
             "monday",
@@ -189,7 +197,9 @@ def test_feed_from_dir_optional_cols():
     assert set(feed.trips.columns.tolist()) == set(expect_cols["trips"])
     assert set(feed.routes.columns.tolist()) == set(expect_cols["routes"])
     assert set(feed.calendar.columns.tolist()) == set(expect_cols["calendar"])
-    assert set(feed.calendar_dates.columns.tolist()) == set(expect_cols["calendar_dates"])
+    assert set(feed.calendar_dates.columns.tolist()) == set(
+        expect_cols["calendar_dates"]
+    )
     assert set(feed.shapes.columns.tolist()) == set(expect_cols["shapes"])
     assert set(feed.stops.columns.tolist()) == set(expect_cols["stops"])
     assert set(feed.stop_times.columns.tolist()) == set(expect_cols["stop_times"])
@@ -197,7 +207,10 @@ def test_feed_from_dir_optional_cols():
 
 def test_feed_dtypes():
     # Load test feed
-    feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
+    feed = Feed.from_dir(
+        Path(__file__).parent / "data" / "nantucket",
+        columns={"stop_times": ["departure_time"]},
+    )
 
     # Check that the correct dtypes are loaded by default
     assert feed.agency.dtypes["agency_id"] == "object"
@@ -243,8 +256,8 @@ def test_feed_dtypes():
     assert feed.stop_times.dtypes["trip_id"] == "object"
     assert feed.stop_times.dtypes["stop_id"] == "object"
     assert feed.stop_times.dtypes["stop_sequence"] == "int64"
-    assert feed.stop_times.dtypes["arrival_time"] == "object"
-
+    assert str(feed.stop_times.dtypes["arrival_time"]) == "timedelta64[ns]"
+    assert str(feed.stop_times.dtypes["departure_time"]) == "timedelta64[ns]"
 
 
 # # Test for Feed.get_service_ids_from_date
