@@ -1,3 +1,10 @@
 .DS_Store
 data/*
 gtfsblocks/__pycache__/*
+king-county-metro-data/*
+*.egg-info
+.vscode
+*.ipynb
+*.tar.gz
+*.whl
+*.pyc
