@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "gtfsblocks"
@@ -23,10 +23,28 @@ dependencies = [
     "plotly>=5.24"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "ruff",
+    "ipykernel",
+    "nbformat"
+]
+
 [project.urls]
 Homepage = "https://github.com/dan-mccabe/gtfsblocks"
 Issues = "https://github.com/dan-mccabe/gtfsblocks/issues"
 
-[tool.setuptools.packages.find]
-include = ["gtfsblocks*"]
-exclude = ["data*", "licenses*", "examples_and_tests*"]
+[tool.hatch.build.targets.wheel]
+packages = ["gtfsblocks"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "data",
+    "licenses", 
+    "examples_and_tests",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".vscode",
+    "king-county-metro-data"
+]
