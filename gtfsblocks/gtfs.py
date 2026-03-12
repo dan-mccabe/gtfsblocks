@@ -1,12 +1,12 @@
-import pandas as pd
-import numpy as np
-import warnings
-import os
 import datetime
-import plotly.graph_objects as go
-from typing import Optional, Literal, Union
+import os
+import warnings
 from collections.abc import Iterable, Mapping
+from typing import Literal, Optional, Union
 
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 
 DatetimeType = Union[float, str, datetime.date, datetime.datetime]
 
@@ -1052,3 +1052,38 @@ class Feed:
             weekdays_to_patterns.groupby("weekday")["n_dates"].idxmax()
         ]
         return top_patterns.set_index("weekday")
+
+    def get_feed_overview_dict(self) -> dict:
+        """
+        Return a dictionary of key feed information.
+        """
+        patterns = self.get_service_ids_all_dates()
+        date_patterns = (
+            patterns.groupby("date")["service_id"].apply(frozenset).reset_index()
+        )
+        pattern_summary = self.get_service_pattern_summary()
+        date_totals = date_patterns.merge(pattern_summary, on="service_id").drop(
+            columns="n_dates"
+        )
+        overview_dict = (
+            date_totals[["n_trips", "service_hours", "service_dist"]]
+            .rename(
+                columns={
+                    "n_trips": "median_n_trips",
+                    "service_hours": "median_service_hours",
+                    "service_dist": "median_service_miles",
+                }
+            )
+            .median()
+            .astype(int)
+            .to_dict()
+        )
+        overview_dict["n_routes"] = len(self.routes)
+        date_info = (
+            self.get_service_ids_all_dates()["date"]
+            .agg({"start_date": "min", "end_date": "max"})
+            .dt.strftime("%Y-%m-%d")
+            .to_dict()
+        )
+        overview_dict.update(date_info)
+        return overview_dict
