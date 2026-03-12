@@ -758,8 +758,8 @@ class Feed:
         # Get stop times only for the relevant trips
         st_filt = self.stop_times.loc[
             self.stop_times["trip_id"].isin(df["trip_id"].tolist()), :
-        ]
-        st_filt.loc[:, "arrival_time"] = ref_date + st_filt["arrival_time"]
+        ].copy()
+        st_filt.loc["arrival_time"] = ref_date + st_filt["arrival_time"]
 
         # Get start time of every trip
         start_times = (
