@@ -105,8 +105,7 @@ def test_get_shape():
 # Test for Feed.from_dir
 def test_feed_from_dir_default():
     # Load test feed
-    # feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
-    feed = Feed.from_dir("../../data/nantucket")
+    feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
 
     # Check that the correct columns are loaded by default
     default_cols = {
