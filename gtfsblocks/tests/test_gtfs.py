@@ -105,8 +105,7 @@ def test_get_shape():
 # Test for Feed.from_dir
 def test_feed_from_dir_default():
     # Load test feed
-    # feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
-    feed = Feed.from_dir("../../data/nantucket")
+    feed = Feed.from_dir(Path(__file__).parent / "data" / "nantucket")
 
     # Check that the correct columns are loaded by default
     default_cols = {
@@ -213,23 +212,23 @@ def test_feed_dtypes():
     )
 
     # Check that the correct dtypes are loaded by default
-    assert feed.agency.dtypes["agency_id"] == "object"
-    assert feed.agency.dtypes["agency_name"] == "object"
-    assert feed.agency.dtypes["agency_url"] == "object"
-    assert feed.agency.dtypes["agency_timezone"] == "object"
+    assert feed.agency.dtypes["agency_id"] == "str"
+    assert feed.agency.dtypes["agency_name"] == "str"
+    assert feed.agency.dtypes["agency_url"] == "str"
+    assert feed.agency.dtypes["agency_timezone"] == "str"
 
-    assert feed.trips.dtypes["trip_id"] == "object"
-    assert feed.trips.dtypes["route_id"] == "object"
-    assert feed.trips.dtypes["service_id"] == "object"
-    assert feed.trips.dtypes["block_id"] == "object"
-    assert feed.trips.dtypes["shape_id"] == "object"
+    assert feed.trips.dtypes["trip_id"] == "str"
+    assert feed.trips.dtypes["route_id"] == "str"
+    assert feed.trips.dtypes["service_id"] == "str"
+    assert feed.trips.dtypes["block_id"] == "str"
+    assert feed.trips.dtypes["shape_id"] == "str"
 
-    assert feed.routes.dtypes["route_short_name"] == "object"
+    assert feed.routes.dtypes["route_short_name"] == "str"
     assert feed.routes.dtypes["route_type"] == "int64"
-    assert feed.routes.dtypes["agency_id"] == "object"
-    assert feed.routes.dtypes["route_desc"] == "object"
+    assert feed.routes.dtypes["agency_id"] == "str"
+    assert feed.routes.dtypes["route_desc"] == "str"
 
-    assert feed.calendar.dtypes["service_id"] == "object"
+    assert feed.calendar.dtypes["service_id"] == "str"
     assert feed.calendar.dtypes["monday"] == "int64"
     assert feed.calendar.dtypes["tuesday"] == "int64"
     assert feed.calendar.dtypes["wednesday"] == "int64"
@@ -237,64 +236,24 @@ def test_feed_dtypes():
     assert feed.calendar.dtypes["friday"] == "int64"
     assert feed.calendar.dtypes["saturday"] == "int64"
     assert feed.calendar.dtypes["sunday"] == "int64"
-    assert str(feed.calendar.dtypes["start_date"]) == "datetime64[ns]"
-    assert str(feed.calendar.dtypes["end_date"]) == "datetime64[ns]"
+    assert str(feed.calendar.dtypes["start_date"]).startswith("datetime64")
+    assert str(feed.calendar.dtypes["end_date"]).startswith("datetime64")
 
-    assert feed.calendar_dates.dtypes["service_id"] == "object"
-    assert str(feed.calendar_dates.dtypes["date"]) == "datetime64[ns]"
+    assert feed.calendar_dates.dtypes["service_id"] == "str"
+    assert str(feed.calendar_dates.dtypes["date"]).startswith("datetime64")
     assert feed.calendar_dates.dtypes["exception_type"] == "int64"
 
-    assert feed.shapes.dtypes["shape_id"] == "object"
+    assert feed.shapes.dtypes["shape_id"] == "str"
     assert feed.shapes.dtypes["shape_pt_lat"] == "float64"
     assert feed.shapes.dtypes["shape_pt_lon"] == "float64"
     assert feed.shapes.dtypes["shape_pt_sequence"] == "int64"
 
-    assert feed.stops.dtypes["stop_id"] == "object"
+    assert feed.stops.dtypes["stop_id"] == "str"
     assert feed.stops.dtypes["stop_lat"] == "float64"
     assert feed.stops.dtypes["stop_lon"] == "float64"
 
-    assert feed.stop_times.dtypes["trip_id"] == "object"
-    assert feed.stop_times.dtypes["stop_id"] == "object"
+    assert feed.stop_times.dtypes["trip_id"] == "str"
+    assert feed.stop_times.dtypes["stop_id"] == "str"
     assert feed.stop_times.dtypes["stop_sequence"] == "int64"
-    assert str(feed.stop_times.dtypes["arrival_time"]) == "timedelta64[ns]"
-    assert str(feed.stop_times.dtypes["departure_time"]) == "timedelta64[ns]"
-
-
-# # Test for Feed.get_service_ids_from_date
-# def test_get_service_ids_from_date(tmp_path):
-#     # Create temporary GTFS files
-#     (tmp_path / "calendar.txt").write_text("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n1,1,1,1,1,1,0,0,20230101,20231231")
-#     (tmp_path / "calendar_dates.txt").write_text("service_id,date,exception_type\n1,20230101,1")
-#     feed = Feed.from_dir(tmp_path)
-
-#     # Test service IDs for a specific date
-#     service_ids = feed.get_service_ids_from_date("2023-01-01")
-#     assert "1" in service_ids
-
-# # Test for Feed.add_trip_data
-# def test_add_trip_data(tmp_path):
-#     # Create temporary GTFS files
-#     (tmp_path / "trips.txt").write_text("trip_id,route_id,service_id,block_id,shape_id\n1,1,1,1,1")
-#     (tmp_path / "shapes.txt").write_text("shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n1,0,0,1\n1,1,1,2")
-#     (tmp_path / "stop_times.txt").write_text("trip_id,stop_sequence,arrival_time,stop_id\n1,1,08:00:00,1\n1,2,09:00:00,2")
-#     feed = Feed.from_dir(tmp_path)
-
-#     # Test adding trip data
-#     trips_df = feed.trips
-#     result = feed.add_trip_data(trips_df, "2023-01-01")
-#     assert "start_time" in result.columns
-#     assert "end_time" in result.columns
-#     assert "start_lat" in result.columns
-#     assert "end_lat" in result.columns
-
-# # Test for Feed.get_trips_from_date
-# def test_get_trips_from_date(tmp_path):
-#     # Create temporary GTFS files
-#     (tmp_path / "calendar.txt").write_text("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n1,1,1,1,1,1,0,0,20230101,20231231")
-#     (tmp_path / "trips.txt").write_text("trip_id,route_id,service_id,block_id,shape_id\n1,1,1,1,1")
-#     feed = Feed.from_dir(tmp_path)
-
-#     # Test getting trips for a specific date
-#     trips = feed.get_trips_from_date("2023-01-01")
-#     assert not trips.empty
-#     assert "trip_id" in trips.columns
+    assert str(feed.stop_times.dtypes["arrival_time"]).startswith("timedelta64")
+    assert str(feed.stop_times.dtypes["departure_time"]).startswith("timedelta64")

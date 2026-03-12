@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gtfsblocks"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
-  { name="Dan McCabe", email="Dan.McCabe@nrel.gov" },
+  { name="Dan McCabe", email="Dan.McCabe@nlr.gov" },
 ]
 license = {text = "BSD 3-Clause"}
 description = "Python package for processing GTFS feeds to assemble bus blocks and relevant data "
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -28,7 +28,8 @@ dev = [
     "pre-commit",
     "ruff",
     "ipykernel",
-    "nbformat"
+    "nbformat",
+    "pytest",
 ]
 
 [project.urls]
