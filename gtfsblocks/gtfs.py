@@ -372,7 +372,7 @@ class Feed:
         REQUIRED_COLS = {
             "agency": ["agency_name", "agency_url", "agency_timezone"],
             "trips": ["trip_id", "route_id", "service_id", "block_id", "shape_id"],
-            "routes": ["route_id", "route_short_name", "route_type"],
+            "routes": ["route_id", "agency_id", "route_short_name", "route_type"],
             "calendar": [
                 "service_id",
                 "monday",
@@ -936,6 +936,7 @@ class Feed:
                 service_add["weekday"] = service_add["date"].dt.dayofweek.apply(
                     lambda x: dow_dict[x]
                 )
+                # TODO: ensure service_add isn't NA or empty. test w/ RIPTA
                 patterns = pd.concat([patterns, service_add], ignore_index=True)
 
             # Remove service IDs based on calendar_dates
