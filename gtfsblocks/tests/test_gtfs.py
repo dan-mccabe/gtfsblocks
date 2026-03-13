@@ -129,8 +129,6 @@ def test_feed_from_dir_default():
         "stops": ["stop_id", "stop_lat", "stop_lon"],
         "stop_times": ["trip_id", "stop_sequence", "arrival_time", "stop_id"],
     }
-    print(feed.stop_times.columns.tolist())
-    print(default_cols["stop_times"])
 
     assert set(feed.agency.columns.tolist()) == set(default_cols["agency"])
     assert set(feed.trips.columns.tolist()) == set(default_cols["trips"])
