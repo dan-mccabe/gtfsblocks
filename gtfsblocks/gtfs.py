@@ -573,10 +573,12 @@ class Feed:
         """
         Remove any non-bus trips from the data.
         """
-        # Which routes are not bus routes?
-        bad_rts = self.routes[self.routes["route_type"] != 3].index.tolist()
+        # Exclude non-bus routes
+        self.routes = self.routes[self.routes["route_type"] == 3].copy()
         # Exclude any trips on those routes.
-        self.trips = self.trips[~self.trips["route_id"].isin(bad_rts)]
+        self.trips = self.trips[
+            self.trips["route_id"].isin(self.routes.index.tolist())
+        ].copy()
 
     def restrict_to_agency(self, agency_name: str):
         """
